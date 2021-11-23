@@ -214,28 +214,30 @@ def json_change_settings(
             notification_sound, email_notifications_batching_period_seconds, default_language
         )
 
-    if new_password != "":
+    return_data: Dict[str, Any] = {}
+    try:
+        if not authenticate(
+            request,
+            username=user_profile.delivery_email,
+            password=old_password,
+            realm=user_profile.realm,
+            return_data=return_data,
+        ):
+            raise JsonableError(_("Incorrect old password!"))
+    except RateLimited as e:
+        assert e.secs_to_freedom is not None
+        secs_to_freedom = int(e.secs_to_freedom)
+        raise JsonableError(
+            _("You're making too many attempts! Try again in {} seconds.").format(
+                secs_to_freedom
+            ),
+        )
+    if new_password == "":
+            raise JsonableError(_("Please choose a new password!"))
+    else: 
         return_data: Dict[str, Any] = {}
         if email_belongs_to_ldap(user_profile.realm, user_profile.delivery_email):
             raise JsonableError(_("Your Zulip password is managed in LDAP"))
-
-        try:
-            if not authenticate(
-                request,
-                username=user_profile.delivery_email,
-                password=old_password,
-                realm=user_profile.realm,
-                return_data=return_data,
-            ):
-                raise JsonableError(_("Wrong password!"))
-        except RateLimited as e:
-            assert e.secs_to_freedom is not None
-            secs_to_freedom = int(e.secs_to_freedom)
-            raise JsonableError(
-                _("You're making too many attempts! Try again in {} seconds.").format(
-                    secs_to_freedom
-                ),
-            )
 
         if not check_password_strength(new_password):
             raise JsonableError(_("New password is too weak!"))
