@@ -228,14 +228,11 @@ def json_change_settings(
         assert e.secs_to_freedom is not None
         secs_to_freedom = int(e.secs_to_freedom)
         raise JsonableError(
-            _("You're making too many attempts! Try again in {} seconds.").format(
-                secs_to_freedom
-            ),
+            _("You're making too many attempts! Try again in {} seconds.").format(secs_to_freedom),
         )
     if new_password == "":
-            raise JsonableError(_("Please choose a new password!"))
-    else: 
-        return_data: Dict[str, Any] = {}
+        raise JsonableError(_("Please choose a new password!"))
+    else:
         if email_belongs_to_ldap(user_profile.realm, user_profile.delivery_email):
             raise JsonableError(_("Your Zulip password is managed in LDAP"))
 
