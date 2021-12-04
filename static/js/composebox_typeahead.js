@@ -857,6 +857,7 @@ export function content_typeahead_selected(item, event) {
                 beginning += mention_text + " ";
                 if (!is_silent) {
                     compose_validate.warn_if_mentioning_unsubscribed_user(item);
+                    compose.warn_if_mention_one_on_one(item);
                 }
             }
             break;

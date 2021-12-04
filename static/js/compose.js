@@ -38,6 +38,9 @@ import {user_settings} from "./user_settings";
 import * as util from "./util";
 import * as zcommand from "./zcommand";
 
+import render_compose_mention_one_on_one_alert from "../templates/compose_mention_one_on_one_alert.hbs";
+import { get_user_ids } from "./user_pill";
+
 // Docs: https://zulip.readthedocs.io/en/latest/subsystems/sending-messages.html
 
 /* Track the state of the @all warning. The user must acknowledge that they are spamming the entire
@@ -70,6 +73,11 @@ export function update_video_chat_button_display() {
     const show_video_chat_button = compute_show_video_chat_button();
     $("#below-compose-content .video_link").toggle(show_video_chat_button);
     $(".message-edit-feature-group .video_link").toggle(show_video_chat_button);
+}
+
+export function clear_mention_one_on_one_alert() {
+    $("#compose_mention_one_on_one_alerts").hide();
+    $("#compose_mention_one_on_one_alerts").empty();
 }
 
 export function clear_invites() {
@@ -273,6 +281,7 @@ export function finish() {
     clear_preview_area();
     clear_invites();
     clear_private_stream_alert();
+    clear_mention_one_on_one_alert();
     notifications.clear_compose_notifications();
 
     const message_content = compose_state.message_content();
@@ -398,6 +407,44 @@ export function render_compose_box() {
     $(`.enter_sends_${user_settings.enter_sends}`).show();
     common.adjust_mac_shortcuts(".enter_sends kbd");
 }
+
+export function warn_if_mention_one_on_one(mentioned) {
+    if (compose_state.get_message_type() !== "private") {
+        return;
+    }
+
+    const pm_users = compose_pm_pill.get_user_ids();
+
+    if (pm_users.length !== 1) {
+        return;
+    }
+
+    const user_id = mentioned.user_id;
+
+    if (!pm_users.includes(user_id)) {
+        return;
+    }
+
+    const warning_area = $("#compose_mention_one_on_one_alerts");
+    const existing_mentions_area = $("#compose_mention_one_on_one_alerts .compose_mention_one_on_one_alert");
+
+    const existing_mentions = Array.from($(existing_mentions_area), (user_row) =>
+        Number.parseInt($(user_row).data("user-id"), 10),
+    );
+
+    if (!existing_mentions.includes(user_id)) {
+        const context = {
+            user_id,
+            name: mentioned.full_name,
+        };
+        const new_row = render_compose_mention_one_on_one_alert(context);
+
+        warning_area.append(new_row);
+    }
+
+    warning_area.show();
+}
+
 
 export function initialize() {
     render_compose_box();
